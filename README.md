@@ -16,6 +16,6 @@ Use the scheduler module to execute this script every hour on your local DMA.
 
 ## Pointers
 
-* Use the IDms class available from the Skyline.DataMiner.Core.DataMinerSystem.Automation Nuget\
-  Package (entrypoint: Engine.GetDms()).
+* Use the IDms class available from the [Skyline.DataMiner.Core.DataMinerSystem.Automation](https://www.nuget.org/packages/Skyline.DataMiner.Core.DataMinerSystem.Automation/1.1.3.8) Nuget (entrypoint: IEngine.GetDms()).
 * Use logging (either IEngine.GenerateInformation or IEngine.Log to debug your scripts).
+* For the .CSV-file generation, you can refer to [Skyline.DataMiner.Utils.ExportImport](https://github.com/SkylineCommunications/Skyline.DataMiner.Utils.ExportImport).

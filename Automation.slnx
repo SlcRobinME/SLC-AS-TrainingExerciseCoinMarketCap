@@ -1,0 +1,29 @@
+<Solution>
+  <Folder Name="/CompanionFiles/" />
+  <Folder Name="/CompanionFiles/Skyline DataMiner/">
+    <File Path="CompanionFiles/Skyline DataMiner/AboutThisFolder.md" />
+  </Folder>
+  <Folder Name="/Dlls/">
+    <File Path="Dlls/ABOUT.md" />
+  </Folder>
+  <Folder Name="/Documentation/">
+    <File Path="Documentation/ABOUT.md" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Internal/">
+    <File Path="Internal/.editorconfig" />
+  </Folder>
+  <Folder Name="/Internal/Code Analysis/">
+    <File Path="Internal/Code Analysis/qaction-debug.ruleset" />
+    <File Path="Internal/Code Analysis/qaction-release.ruleset" />
+    <File Path="Internal/Code Analysis/stylecop.json" />
+  </Folder>
+  <Folder Name="/Scripts/" />
+  <Folder Name="/Scripts/CoinMarketCap/">
+    <File Path="CoinMarketCap.xml" />
+  </Folder>
+  <Folder Name="/Scripts/CoinMarketCap/Actions/">
+    <Project Path="CoinMarketCap_1/CoinMarketCap_1.csproj" />
+  </Folder>
+  <Folder Name="/Tests/" />
+</Solution>
