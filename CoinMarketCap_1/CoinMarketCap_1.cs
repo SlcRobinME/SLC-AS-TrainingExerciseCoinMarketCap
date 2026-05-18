@@ -29,6 +29,8 @@ namespace CoinMarketCap_1
     {
         private const string ElementName = "coin-market";
         private const string BaseExportPath = @"C:\Skyline DataMiner\Documents";
+        private const int LatestListingsTableId = 1000;
+        private const int CategoriesTableId = 1000;
 
         /// <summary>
         /// The script entry point.
@@ -76,7 +78,7 @@ namespace CoinMarketCap_1
             {
                 engine.GenerateInformation($"Script|ExportLatestListings|Exporting element: {element.Name}");
 
-                var table = element.GetTable(1000);
+                var table = element.GetTable(LatestListingsTableId);
                 var rows = table.GetRows();
 
                 if(rows == null || rows.Length == 0)
@@ -131,7 +133,7 @@ namespace CoinMarketCap_1
             {
                 engine.GenerateInformation($"Script|ExportCategories|Exporting element: {element.Name}");
 
-                var table = element.GetTable(2000);
+                var table = element.GetTable(CategoriesTableId);
                 var rows = table.GetRows();
 
                 if (rows == null || rows.Length == 0)
