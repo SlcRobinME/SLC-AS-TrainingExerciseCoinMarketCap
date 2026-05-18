@@ -125,7 +125,10 @@ namespace CoinMarketCap_1
                 {
                     string Get(int pid)
                     {
-                        try { return element.GetStandaloneParameter<string>(pid).GetValue() ?? string.Empty; }
+                        try
+						{
+							return element.GetStandaloneParameter<string>(pid).GetValue() ?? string.Empty;
+						}
                         catch (Exception ex)
                         {
                             engine.Log($"Script|ExportLatestQuotesToCsv|Could not read pid {pid} from {element.Name}: {ex.Message}");
@@ -135,28 +138,28 @@ namespace CoinMarketCap_1
 
                     dtoList.Add(new LatestQuotesRow
                     {
-                        ElementName = EscapeCsvValue(element.Name),
-                        TotalMarketCapUsd = EscapeCsvValue(Get(300)),
-                        TotalVolume24hUsd = EscapeCsvValue(Get(301)),
-                        BtcDominance = EscapeCsvValue(Get(302)),
-                        EthDominance = EscapeCsvValue(Get(303)),
-                        ActiveCryptocurrencies = EscapeCsvValue(Get(304)),
-                        LastUpdated = EscapeCsvValue(Get(305)),
-                        DeFi24hPercentageChange = EscapeCsvValue(Get(306)),
-                        ActiveExchanges = EscapeCsvValue(Get(307)),
-                        TotalMarketCapYesterdayUsd = EscapeCsvValue(Get(308)),
-                        TotalMarketCapYesterdayPercentageChange = EscapeCsvValue(Get(309)),
-                        TotalVolume24hYesterdayUsd = EscapeCsvValue(Get(310)),
-                        TotalVolume24hYesterdayPercentageChange = EscapeCsvValue(Get(311)),
-                        AltcoinMarketCapUsd = EscapeCsvValue(Get(312)),
-                        AltcoinVolume24hUsd = EscapeCsvValue(Get(313)),
-                        DeFiMarketCapUsd = EscapeCsvValue(Get(314)),
-                        DeFiVolume24hUsd = EscapeCsvValue(Get(315)),
-                        StablecoinMarketCapUsd = EscapeCsvValue(Get(316)),
-                        StablecoinVolume24hUsd = EscapeCsvValue(Get(317)),
-                        Stablecoin24hPercentageChange = EscapeCsvValue(Get(318)),
-                        DerivativesVolume24hUsd = EscapeCsvValue(Get(319)),
-                        Derivatives24hPercentageChange = EscapeCsvValue(Get(320)),
+                        ElementName = ScriptHelpers.EscapeCsvValue(element.Name),
+                        TotalMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(300)),
+                        TotalVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(301)),
+                        BtcDominance = ScriptHelpers.EscapeCsvValue(Get(302)),
+                        EthDominance = ScriptHelpers.EscapeCsvValue(Get(303)),
+                        ActiveCryptocurrencies = ScriptHelpers.EscapeCsvValue(Get(304)),
+                        LastUpdated = ScriptHelpers.EscapeCsvValue(Get(305)),
+                        DeFi24hPercentageChange = ScriptHelpers.EscapeCsvValue(Get(306)),
+                        ActiveExchanges = ScriptHelpers.EscapeCsvValue(Get(307)),
+                        TotalMarketCapYesterdayUsd = ScriptHelpers.EscapeCsvValue(Get(308)),
+                        TotalMarketCapYesterdayPercentageChange = ScriptHelpers.EscapeCsvValue(Get(309)),
+                        TotalVolume24hYesterdayUsd = ScriptHelpers.EscapeCsvValue(Get(310)),
+                        TotalVolume24hYesterdayPercentageChange = ScriptHelpers.EscapeCsvValue(Get(311)),
+                        AltcoinMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(312)),
+                        AltcoinVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(313)),
+                        DeFiMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(314)),
+                        DeFiVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(315)),
+                        StablecoinMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(316)),
+                        StablecoinVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(317)),
+                        Stablecoin24hPercentageChange = ScriptHelpers.EscapeCsvValue(Get(318)),
+                        DerivativesVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(319)),
+                        Derivatives24hPercentageChange = ScriptHelpers.EscapeCsvValue(Get(320)),
                     });
                 }
 
@@ -192,25 +195,25 @@ namespace CoinMarketCap_1
                 {
                     dtoList.Add(new LatestListingsRow
                     {
-                        Id = EscapeCsvValue(Convert.ToString(row[0])),
-                        Name = EscapeCsvValue(Convert.ToString(row[1])),
-                        Symbol = EscapeCsvValue(Convert.ToString(row[2])),
-                        Slug = EscapeCsvValue(Convert.ToString(row[3])),
-                        CmcRank = EscapeCsvValue(Convert.ToString(row[4])),
-                        PriceUsd = EscapeCsvValue(Convert.ToString(row[5])),
-                        PercentChange24h = EscapeCsvValue(Convert.ToString(row[6])),
-                        MarketCapUsd = EscapeCsvValue(Convert.ToString(row[7])),
-                        Volume24hUsd = EscapeCsvValue(Convert.ToString(row[8])),
-                        CirculatingSupply = EscapeCsvValue(Convert.ToString(row[9])),
-                        MaxSupply = EscapeCsvValue(Convert.ToString(row[10])),
-                        LastUpdated = EscapeCsvValue(Convert.ToString(row[11])),
-                        PercentChange1h = EscapeCsvValue(Convert.ToString(row[12])),
-                        PercentChange7d = EscapeCsvValue(Convert.ToString(row[13])),
-                        PercentChange30d = EscapeCsvValue(Convert.ToString(row[14])),
-                        VolumeChange24h = EscapeCsvValue(Convert.ToString(row[15])),
-                        FullyDilutedMarketCap = EscapeCsvValue(Convert.ToString(row[16])),
-                        TotalSupply = EscapeCsvValue(Convert.ToString(row[17])),
-                        InfiniteSupply = EscapeCsvValue(Convert.ToString(row[18])),
+                        Id = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[0])),
+                        Name = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[1])),
+                        Symbol = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[2])),
+                        Slug = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[3])),
+                        CmcRank = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[4])),
+                        PriceUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[5])),
+                        PercentChange24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[6])),
+                        MarketCapUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[7])),
+                        Volume24hUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[8])),
+                        CirculatingSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[9])),
+                        MaxSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[10])),
+                        LastUpdated = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[11])),
+                        PercentChange1h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[12])),
+                        PercentChange7d = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[13])),
+                        PercentChange30d = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[14])),
+                        VolumeChange24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[15])),
+                        FullyDilutedMarketCap = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[16])),
+                        TotalSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[17])),
+                        InfiniteSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[18])),
                     });
                 }
 
@@ -246,16 +249,16 @@ namespace CoinMarketCap_1
                 {
                     dtoList.Add(new CategoriesRow
                     {
-                        Id = EscapeCsvValue(Convert.ToString(row[0])),
-                        Name = EscapeCsvValue(Convert.ToString(row[1])),
-                        NumTokens = EscapeCsvValue(Convert.ToString(row[2])),
-                        AvgPriceChange = EscapeCsvValue(Convert.ToString(row[3])),
-                        VolumeChange = EscapeCsvValue(Convert.ToString(row[4])),
-                        MarketCapUsd = EscapeCsvValue(Convert.ToString(row[5])),
-                        MarketCapChange = EscapeCsvValue(Convert.ToString(row[6])),
-                        Volume24h = EscapeCsvValue(Convert.ToString(row[7])),
-                        LastUpdated = EscapeCsvValue(Convert.ToString(row[8])),
-                        RefreshButton = EscapeCsvValue(Convert.ToString(row[9])),
+                        Id = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[0])),
+                        Name = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[1])),
+                        NumTokens = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[2])),
+                        AvgPriceChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[3])),
+                        VolumeChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[4])),
+                        MarketCapUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[5])),
+                        MarketCapChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[6])),
+                        Volume24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[7])),
+                        LastUpdated = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[8])),
+                        RefreshButton = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[9])),
                     });
                 }
 
@@ -269,17 +272,6 @@ namespace CoinMarketCap_1
             {
                 engine.Log($"Script|ExportCategoriesToCsv|Exception thrown:{Environment.NewLine}{ex}");
             }
-        }
-
-        private static string EscapeCsvValue(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-                return string.Empty;
-
-            if (value.Contains(";") || value.Contains("\"") || value.Contains("\n"))
-                return "\"" + value.Replace("\"", "\"\"") + "\"";
-
-            return value;
         }
     }
 }
