@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <DMSScript options="272" xmlns="http://www.skyline.be/automation">
 	<Name>CoinMarketCap</Name>
-	<Description></Description>
+	<Description>Retrieves cryptocurrency data from all CoinMarketCap elements on the DMA and exports each element's table to a separate CSV file.</Description>
 	<Type>Automation</Type>
-	<Author>SKYLINE2\XXX</Author>
+	<Author>SKYLINE2\AMO</Author>
 	<CheckSets>FALSE</CheckSets>
 	<Folder></Folder>
 
@@ -14,6 +14,9 @@
 	</Memory>
 
 	<Parameters>
+		<ScriptParameter id="2" type="string" values="">
+			<Description>Folder Name</Description>
+		</ScriptParameter>
 	</Parameters>
 
 	<Script>
