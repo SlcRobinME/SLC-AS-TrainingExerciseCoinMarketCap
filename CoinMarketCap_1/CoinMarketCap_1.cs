@@ -30,7 +30,7 @@ namespace CoinMarketCap_1
         private const string ElementName = "coin-market";
         private const string BaseExportPath = @"C:\Skyline DataMiner\Documents";
         private const int LatestListingsTableId = 1000;
-        private const int CategoriesTableId = 1000;
+        private const int CategoriesTableId = 2000;
 
         /// <summary>
         /// The script entry point.
@@ -91,24 +91,7 @@ namespace CoinMarketCap_1
 
                 csvRows.Add("ID,Name,Symbol,Rank,Circulating Supply,Max Supply,Price USD,Market Cap,Volume 24h,Percent Change 1h,Percent Change 24h,Percent Change 7d");
 
-                foreach (var row in rows)
-                {
-                    csvRows.Add(string.Join(",", new[]
-                    {
-                        Convert.ToString(row[0]),
-                        Convert.ToString(row[1]),
-                        Convert.ToString(row[2]),
-                        Convert.ToString(row[3]),
-                        Convert.ToString(row[4]),
-                        Convert.ToString(row[5]),
-                        Convert.ToString(row[6]),
-                        Convert.ToString(row[7]),
-                        Convert.ToString(row[8]),
-                        Convert.ToString(row[9]),
-                        Convert.ToString(row[10]),
-                        Convert.ToString(row[11]),
-                    }));
-                }
+                csvRows.AddRange(rows.Select(row => string.Join(",", row.Select(cell => Convert.ToString(cell)))));
 
                 if (!Directory.Exists(exportPath))
                 {
@@ -146,21 +129,7 @@ namespace CoinMarketCap_1
 
                 csvRows.Add("ID,Name,Number of Tokens,Average Price Change,Market Cap,Market Cap Change,Volume,Volume Change,Last Updated");
 
-                foreach (var row in rows)
-                {
-                    csvRows.Add(string.Join(",", new[]
-                    {
-                        Convert.ToString(row[0]),
-                        Convert.ToString(row[1]),
-                        Convert.ToString(row[2]),
-                        Convert.ToString(row[3]),
-                        Convert.ToString(row[4]),
-                        Convert.ToString(row[5]),
-                        Convert.ToString(row[6]),
-                        Convert.ToString(row[7]),
-                        Convert.ToString(row[8]),
-                    }));
-                }
+                csvRows.AddRange(rows.Select(row => string.Join(",", row.Select(cell => Convert.ToString(cell)))));
 
                 if (!Directory.Exists(exportPath))
                 {
