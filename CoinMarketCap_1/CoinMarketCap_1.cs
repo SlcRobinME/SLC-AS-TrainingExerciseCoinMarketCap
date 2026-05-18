@@ -60,7 +60,8 @@ namespace CoinMarketCap_1
 
                 foreach (var element in elements)
                 {
-                    ExportElementToCsv(engine, element,exportPath);
+                    ExportLatestListingsToCsv(engine, element,exportPath);
+                    ExportCategoriesToCsv(engine, element, exportPath);
                 }
             }
             catch(Exception ex)
@@ -69,18 +70,18 @@ namespace CoinMarketCap_1
             }
 		}
 
-        private void ExportElementToCsv(IEngine engine, IDmsElement element, string exportPath)
+        private void ExportLatestListingsToCsv(IEngine engine, IDmsElement element, string exportPath)
         {
             try
             {
-                engine.GenerateInformation($"Script|ExportElementToCsv|Exporting element: {element.Name}");
+                engine.GenerateInformation($"Script|ExportLatestListings|Exporting element: {element.Name}");
 
                 var table = element.GetTable(1000);
                 var rows = table.GetRows();
 
                 if(rows == null || rows.Length == 0)
                 {
-                    engine.Log($"Script|ExportElementToCsv|No rows found in Latest Listings table for element: {element.Name}");
+                    engine.Log($"Script|ExportLatestListings|No rows found in Latest Listings table for element: {element.Name}");
                     return;
                 }
 
@@ -94,7 +95,6 @@ namespace CoinMarketCap_1
                     {
                         Convert.ToString(row[0]),
                         Convert.ToString(row[1]),
-                        Convert.ToString(row[2]),
                         Convert.ToString(row[2]),
                         Convert.ToString(row[3]),
                         Convert.ToString(row[4]),
@@ -113,16 +113,68 @@ namespace CoinMarketCap_1
                     Directory.CreateDirectory(exportPath);
                 }
 
-                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}.csv");
+                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_LatestListings.csv");
 
                 File.WriteAllLines(filePath, csvRows);
 
-                engine.GenerateInformation($"Script|ExportElementToCsv|Successfully exported {rows.Count()} rows to: {filePath}");
+                engine.GenerateInformation($"Script|ExportLatestListings|Successfully exported {rows.Count()} rows to: {filePath}");
             }
             catch (Exception ex)
             {
-                engine.Log($"Script|ExportElementToCsv|Exception thrown:{Environment.NewLine}{ex}");
+                engine.Log($"Script|ExportLatestListings|Exception thrown:{Environment.NewLine}{ex}");
             }
         }
-	}
+
+        private void ExportCategoriesToCsv(IEngine engine, IDmsElement element, string exportPath)
+        {
+            try
+            {
+                engine.GenerateInformation($"Script|ExportCategories|Exporting element: {element.Name}");
+
+                var table = element.GetTable(2000);
+                var rows = table.GetRows();
+
+                if (rows == null || rows.Length == 0)
+                {
+                    engine.Log($"Script|ExportCategories|No rows found in Latest Listings table for element: {element.Name}");
+                    return;
+                }
+
+                var csvRows = new List<string>();
+
+                csvRows.Add("ID,Name,Number of Tokens,Average Price Change,Market Cap,Market Cap Change,Volume,Volume Change,Last Updated");
+
+                foreach (var row in rows)
+                {
+                    csvRows.Add(string.Join(",", new[]
+                    {
+                        Convert.ToString(row[0]),
+                        Convert.ToString(row[1]),
+                        Convert.ToString(row[2]),
+                        Convert.ToString(row[3]),
+                        Convert.ToString(row[4]),
+                        Convert.ToString(row[5]),
+                        Convert.ToString(row[6]),
+                        Convert.ToString(row[7]),
+                        Convert.ToString(row[8]),
+                    }));
+                }
+
+                if (!Directory.Exists(exportPath))
+                {
+                    Directory.CreateDirectory(exportPath);
+                }
+
+                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_Categories.csv");
+
+                File.WriteAllLines(filePath, csvRows);
+
+                engine.GenerateInformation($"Script|ExportCategories|Successfully exported {rows.Count()} rows to: {filePath}");
+            }
+            catch (Exception ex)
+            {
+                engine.Log($"Script|ExportCategories|Exception thrown:{Environment.NewLine}{ex}");
+            }
+        }
+    }
 }
