@@ -97,7 +97,7 @@
         public string RefreshButton { get; set; }
     }
 
-    internal class LatestQuotesRow
+	internal class LatestQuotesRow
     {
         [CsvHeader("Element Name")]
         public string ElementName { get; set; }
