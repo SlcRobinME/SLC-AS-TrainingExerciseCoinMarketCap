@@ -16,10 +16,12 @@
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);DCFv1;DBInfo;ALARM_SQUASHING</DefineConstants>
+    <AssemblyVersion>2026.0518.1151.12342</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Skyline.DataMiner.Core.DataMinerSystem.Automation" Version="1.1.3.8" />
-    <PackageReference Include="Skyline.DataMiner.Dev.Automation" Version="10.4.0.24" />
+    <PackageReference Include="Skyline.DataMiner.Dev.Automation" Version="10.6.5" />
+    <PackageReference Include="Skyline.DataMiner.Utils.ExportImport" Version="1.0.0" />
     <PackageReference Include="Skyline.DataMiner.Utils.SecureCoding" Version="2.2.3" />
     <PackageReference Include="Skyline.DataMiner.Utils.SecureCoding.Analyzers" Version="2.2.3">
       <PrivateAssets>all</PrivateAssets>

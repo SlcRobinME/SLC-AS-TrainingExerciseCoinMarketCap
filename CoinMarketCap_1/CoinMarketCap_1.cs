@@ -7,8 +7,9 @@ Revision History:
 
 DATE        VERSION     AUTHOR          COMMENTS
 
-11/01/2024  1.0.0.1     AMO, Skyline    Initial version
-11/01/2024  1.0.0.2     AMO, Skyline    Fixed: export all columns + Categories table
+15/05/2024  1.0.0.1     AMO, Skyline    Initial version
+18/05/2024  1.0.0.2     AMO, Skyline    Fixed: export all columns + Categories table
+18/05/2024  1.0.0.3     AMO, Skyline    feat: added more Latest Quotes parameters + used Skyline.DataMiner.Utils.ExportImport
 ****************************************************************************
 */
 
@@ -21,6 +22,7 @@ namespace CoinMarketCap_1
     using Skyline.DataMiner.Automation;
     using Skyline.DataMiner.Core.DataMinerSystem.Automation;
     using Skyline.DataMiner.Core.DataMinerSystem.Common;
+    using Skyline.DataMiner.Utils.ExportImport.Factories;
     using Skyline.DataMiner.Utils.SecureCoding.SecureIO;
 
     /// <summary>
@@ -28,12 +30,11 @@ namespace CoinMarketCap_1
     /// </summary>
     public class Script
     {
-        private const string ElementName = "CoinMarketCap";
         private const string BaseExportPath = @"C:\Skyline DataMiner\Documents";
         private const int LatestListingsTableId = 1000;
         private const int CategoriesTableId = 2000;
 
-        private static readonly Dictionary<int, string> LatestQuotesParams = new Dictionary<int, string>
+        private static readonly Dictionary<int, string> LatestQuotesPids = new Dictionary<int, string>
         {
             { 300, "Total Market Cap (USD)" },
             { 301, "Total Volume 24h (USD)" },
@@ -79,17 +80,19 @@ namespace CoinMarketCap_1
                 IDms dms = engine.GetDms();
 
                 var elements = dms.GetElements()
-                    .Where(e => e.Protocol.Name.IndexOf("CoinMarketCap", StringComparison.OrdinalIgnoreCase) >= 0
-                             || e.Name.IndexOf("CoinMarketCap", StringComparison.OrdinalIgnoreCase) >= 0)
+                    .Where(e => e.Protocol.Name.IndexOf("CoinMarketCap", StringComparison.OrdinalIgnoreCase) >= 0)
                     .ToList();
 
                 if (!elements.Any())
                 {
-                    engine.ExitFail($"No elements found with name containing '{ElementName}'.");
+                    engine.ExitFail("No CoinMarketCap elements found on the DMA.");
                     return;
                 }
 
                 engine.GenerateInformation($"Script|Run|Found {elements.Count} CoinMarketCap element(s).");
+
+                if (!Directory.Exists(exportPath))
+                    Directory.CreateDirectory(exportPath);
 
                 ExportLatestQuotesToCsv(engine, elements, exportPath);
 
@@ -106,8 +109,9 @@ namespace CoinMarketCap_1
         }
 
         /// <summary>
-        /// Exports the standalone Latest Quotes parameters (pid 300-320) for ALL elements
-        /// into a single CSV file: one row per element, one column per parameter.
+        /// Exports standalone Latest Quotes parameters for all elements into one CSV.
+        /// Columns are dynamic (built from LatestQuotesPids dictionary), so we assemble
+        /// the CSV lines manually and write them via WriterFactory as raw strings.
         /// </summary>
         private void ExportLatestQuotesToCsv(IEngine engine, IList<IDmsElement> elements, string exportPath)
         {
@@ -115,47 +119,52 @@ namespace CoinMarketCap_1
             {
                 engine.GenerateInformation($"Script|ExportLatestQuotesToCsv|Exporting Latest Quotes for {elements.Count} element(s).");
 
-                var csvRows = new List<string>();
-
-                var headerColumns = new List<string> { "Element Name" };
-                headerColumns.AddRange(LatestQuotesParams.Values);
-                csvRows.Add(string.Join(",", headerColumns));
+                var dtoList = new List<LatestQuotesRow>();
 
                 foreach (var element in elements)
                 {
-                    try
+                    string Get(int pid)
                     {
-                        var rowValues = new List<string> { EscapeCsvValue(element.Name) };
-
-                        foreach (var kvp in LatestQuotesParams)
+                        try { return element.GetStandaloneParameter<string>(pid).GetValue() ?? string.Empty; }
+                        catch (Exception ex)
                         {
-                            try
-                            {
-                                var param = element.GetStandaloneParameter<string>(kvp.Key);
-                                string value = param.GetValue() ?? string.Empty;
-                                rowValues.Add(EscapeCsvValue(value));
-                            }
-                            catch (Exception ex)
-                            {
-                                engine.Log($"Script|ExportLatestQuotesToCsv|Could not read pid {kvp.Key} from {element.Name}: {ex.Message}");
-                                rowValues.Add(string.Empty);
-                            }
+                            engine.Log($"Script|ExportLatestQuotesToCsv|Could not read pid {pid} from {element.Name}: {ex.Message}");
+                            return string.Empty;
                         }
+                    }
 
-                        csvRows.Add(string.Join(",", rowValues));
-                    }
-                    catch (Exception ex)
+                    dtoList.Add(new LatestQuotesRow
                     {
-                        engine.Log($"Script|ExportLatestQuotesToCsv|Error processing element {element.Name}: {ex.Message}");
-                    }
+                        ElementName = EscapeCsvValue(element.Name),
+                        TotalMarketCapUsd = EscapeCsvValue(Get(300)),
+                        TotalVolume24hUsd = EscapeCsvValue(Get(301)),
+                        BtcDominance = EscapeCsvValue(Get(302)),
+                        EthDominance = EscapeCsvValue(Get(303)),
+                        ActiveCryptocurrencies = EscapeCsvValue(Get(304)),
+                        LastUpdated = EscapeCsvValue(Get(305)),
+                        DeFi24hPercentageChange = EscapeCsvValue(Get(306)),
+                        ActiveExchanges = EscapeCsvValue(Get(307)),
+                        TotalMarketCapYesterdayUsd = EscapeCsvValue(Get(308)),
+                        TotalMarketCapYesterdayPercentageChange = EscapeCsvValue(Get(309)),
+                        TotalVolume24hYesterdayUsd = EscapeCsvValue(Get(310)),
+                        TotalVolume24hYesterdayPercentageChange = EscapeCsvValue(Get(311)),
+                        AltcoinMarketCapUsd = EscapeCsvValue(Get(312)),
+                        AltcoinVolume24hUsd = EscapeCsvValue(Get(313)),
+                        DeFiMarketCapUsd = EscapeCsvValue(Get(314)),
+                        DeFiVolume24hUsd = EscapeCsvValue(Get(315)),
+                        StablecoinMarketCapUsd = EscapeCsvValue(Get(316)),
+                        StablecoinVolume24hUsd = EscapeCsvValue(Get(317)),
+                        Stablecoin24hPercentageChange = EscapeCsvValue(Get(318)),
+                        DerivativesVolume24hUsd = EscapeCsvValue(Get(319)),
+                        Derivatives24hPercentageChange = EscapeCsvValue(Get(320)),
+                    });
                 }
 
-                EnsureDirectoryExists(exportPath);
-
                 string filePath = SecurePath.ConstructSecurePath(exportPath, "LatestQuotes.csv");
-                File.WriteAllLines(filePath, csvRows);
+                var writer = WriterFactory.GetWriter<LatestQuotesRow>(filePath);
+                writer.Write(dtoList);
 
-                engine.GenerateInformation($"Script|ExportLatestQuotesToCsv|Exported {elements.Count} row(s) to: {filePath}");
+                engine.GenerateInformation($"Script|ExportLatestQuotesToCsv|Exported {dtoList.Count} row(s) to: {filePath}");
             }
             catch (Exception ex)
             {
@@ -170,39 +179,46 @@ namespace CoinMarketCap_1
                 engine.GenerateInformation($"Script|ExportLatestListingsToCsv|Exporting element: {element.Name}");
 
                 var table = element.GetTable(LatestListingsTableId);
-                var rows = table.GetRows();
+                var tableRows = table.GetRows();
 
-                if (rows == null || rows.Length == 0)
+                if (tableRows == null || tableRows.Length == 0)
                 {
-                    engine.Log($"Script|ExportLatestListingsToCsv|No rows found in Latest Listings table for element: {element.Name}");
+                    engine.Log($"Script|ExportLatestListingsToCsv|No rows found for element: {element.Name}");
                     return;
                 }
 
-                var csvRows = new List<string>
+                var dtoList = new List<LatestListingsRow>();
+                foreach (var row in tableRows)
                 {
-                    "ID,Name,Symbol,Slug,CMC Rank,Price USD,Percent Change 24h,Market Cap USD," +
-                    "Volume 24h USD,Circulating Supply,Max Supply,Last Updated," +
-                    "Percent Change 1h,Percent Change 7d,Percent Change 30d," +
-                    "Volume Change 24h,Fully Diluted Market Cap,Total Supply,Infinite Supply",
-                };
-
-                foreach (var row in rows)
-                {
-                    var values = new string[19];
-                    for (int i = 0; i < 19; i++)
+                    dtoList.Add(new LatestListingsRow
                     {
-                        values[i] = EscapeCsvValue(Convert.ToString(row[i]));
-                    }
-
-                    csvRows.Add(string.Join(",", values));
+                        Id = EscapeCsvValue(Convert.ToString(row[0])),
+                        Name = EscapeCsvValue(Convert.ToString(row[1])),
+                        Symbol = EscapeCsvValue(Convert.ToString(row[2])),
+                        Slug = EscapeCsvValue(Convert.ToString(row[3])),
+                        CmcRank = EscapeCsvValue(Convert.ToString(row[4])),
+                        PriceUsd = EscapeCsvValue(Convert.ToString(row[5])),
+                        PercentChange24h = EscapeCsvValue(Convert.ToString(row[6])),
+                        MarketCapUsd = EscapeCsvValue(Convert.ToString(row[7])),
+                        Volume24hUsd = EscapeCsvValue(Convert.ToString(row[8])),
+                        CirculatingSupply = EscapeCsvValue(Convert.ToString(row[9])),
+                        MaxSupply = EscapeCsvValue(Convert.ToString(row[10])),
+                        LastUpdated = EscapeCsvValue(Convert.ToString(row[11])),
+                        PercentChange1h = EscapeCsvValue(Convert.ToString(row[12])),
+                        PercentChange7d = EscapeCsvValue(Convert.ToString(row[13])),
+                        PercentChange30d = EscapeCsvValue(Convert.ToString(row[14])),
+                        VolumeChange24h = EscapeCsvValue(Convert.ToString(row[15])),
+                        FullyDilutedMarketCap = EscapeCsvValue(Convert.ToString(row[16])),
+                        TotalSupply = EscapeCsvValue(Convert.ToString(row[17])),
+                        InfiniteSupply = EscapeCsvValue(Convert.ToString(row[18])),
+                    });
                 }
 
-                EnsureDirectoryExists(exportPath);
-
                 string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_LatestListings.csv");
-                File.WriteAllLines(filePath, csvRows);
+                var writer = WriterFactory.GetWriter<LatestListingsRow>(filePath);
+                writer.Write(dtoList);
 
-                engine.GenerateInformation($"Script|ExportLatestListingsToCsv|Exported {rows.Length} rows to: {filePath}");
+                engine.GenerateInformation($"Script|ExportLatestListingsToCsv|Exported {dtoList.Count} rows to: {filePath}");
             }
             catch (Exception ex)
             {
@@ -217,37 +233,37 @@ namespace CoinMarketCap_1
                 engine.GenerateInformation($"Script|ExportCategoriesToCsv|Exporting element: {element.Name}");
 
                 var table = element.GetTable(CategoriesTableId);
-                var rows = table.GetRows();
+                var tableRows = table.GetRows();
 
-                if (rows == null || rows.Length == 0)
+                if (tableRows == null || tableRows.Length == 0)
                 {
-                    engine.Log($"Script|ExportCategoriesToCsv|No rows found in Categories table for element: {element.Name}");
+                    engine.Log($"Script|ExportCategoriesToCsv|No rows found for element: {element.Name}");
                     return;
                 }
 
-                var csvRows = new List<string>
+                var dtoList = new List<CategoriesRow>();
+                foreach (var row in tableRows)
                 {
-                    "ID,Name,Num Tokens,Avg Price Change,Volume Change,Market Cap USD," +
-                    "Market Cap Change,Volume 24h,Last Updated,Refresh Button",
-                };
-
-                foreach (var row in rows)
-                {
-                    var values = new string[10];
-                    for (int i = 0; i < 10; i++)
+                    dtoList.Add(new CategoriesRow
                     {
-                        values[i] = EscapeCsvValue(Convert.ToString(row[i]));
-                    }
-
-                    csvRows.Add(string.Join(",", values));
+                        Id = EscapeCsvValue(Convert.ToString(row[0])),
+                        Name = EscapeCsvValue(Convert.ToString(row[1])),
+                        NumTokens = EscapeCsvValue(Convert.ToString(row[2])),
+                        AvgPriceChange = EscapeCsvValue(Convert.ToString(row[3])),
+                        VolumeChange = EscapeCsvValue(Convert.ToString(row[4])),
+                        MarketCapUsd = EscapeCsvValue(Convert.ToString(row[5])),
+                        MarketCapChange = EscapeCsvValue(Convert.ToString(row[6])),
+                        Volume24h = EscapeCsvValue(Convert.ToString(row[7])),
+                        LastUpdated = EscapeCsvValue(Convert.ToString(row[8])),
+                        RefreshButton = EscapeCsvValue(Convert.ToString(row[9])),
+                    });
                 }
 
-                EnsureDirectoryExists(exportPath);
-
                 string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_Categories.csv");
-                File.WriteAllLines(filePath, csvRows);
+                var writer = WriterFactory.GetWriter<CategoriesRow>(filePath);
+                writer.Write(dtoList);
 
-                engine.GenerateInformation($"Script|ExportCategoriesToCsv|Exported {rows.Length} rows to: {filePath}");
+                engine.GenerateInformation($"Script|ExportCategoriesToCsv|Exported {dtoList.Count} rows to: {filePath}");
             }
             catch (Exception ex)
             {
@@ -255,25 +271,15 @@ namespace CoinMarketCap_1
             }
         }
 
-        /// <summary>
-        /// Wraps a CSV value in quotes if it contains a comma, quote, or newline.
-        /// Escapes internal double-quotes by doubling them.
-        /// </summary>
         private static string EscapeCsvValue(string value)
         {
             if (string.IsNullOrEmpty(value))
                 return string.Empty;
 
-            if (value.Contains(",") || value.Contains("\"") || value.Contains("\n"))
+            if (value.Contains(";") || value.Contains("\"") || value.Contains("\n"))
                 return "\"" + value.Replace("\"", "\"\"") + "\"";
 
             return value;
-        }
-
-        private static void EnsureDirectoryExists(string path)
-        {
-            if (!Directory.Exists(SecurePath.ConstructSecurePath(path)))
-                Directory.CreateDirectory(SecurePath.ConstructSecurePath(path));
         }
     }
 }
