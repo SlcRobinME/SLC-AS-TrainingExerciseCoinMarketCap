@@ -10,6 +10,7 @@ DATE        VERSION     AUTHOR          COMMENTS
 15/05/2024  1.0.0.1     AMO, Skyline    Initial version
 18/05/2024  1.0.0.2     AMO, Skyline    Fixed: export all columns + Categories table
 18/05/2024  1.0.0.3     AMO, Skyline    feat: added more Latest Quotes parameters + used Skyline.DataMiner.Utils.ExportImport
+xx/xx/2024  1.0.0.4     AMO, Skyline    refactor: generic ExportTableToCsv<T> + LatestQuotesPids-driven export
 ****************************************************************************
 */
 
@@ -34,31 +35,6 @@ namespace CoinMarketCap_1
         private const int LatestListingsTableId = 1000;
         private const int CategoriesTableId = 2000;
 
-        private static readonly Dictionary<int, string> LatestQuotesPids = new Dictionary<int, string>
-        {
-            { 300, "Total Market Cap (USD)" },
-            { 301, "Total Volume 24h (USD)" },
-            { 302, "BTC Dominance (%)" },
-            { 303, "ETH Dominance (%)" },
-            { 304, "Active Cryptocurrencies" },
-            { 305, "Last Updated" },
-            { 306, "DeFi 24h Percentage Change (%)" },
-            { 307, "Active Exchanges" },
-            { 308, "Total Market Cap Yesterday (USD)" },
-            { 309, "Total Market Cap Yesterday Percentage Change (%)" },
-            { 310, "Total Volume 24h Yesterday (USD)" },
-            { 311, "Total Volume 24h Yesterday Percentage Change (%)" },
-            { 312, "Altcoin Market Cap (USD)" },
-            { 313, "Altcoin Volume 24h (USD)" },
-            { 314, "DeFi Market Cap (USD)" },
-            { 315, "DeFi Volume 24h (USD)" },
-            { 316, "Stablecoin Market Cap (USD)" },
-            { 317, "Stablecoin Volume 24h (USD)" },
-            { 318, "Stablecoin 24h Percentage Change (%)" },
-            { 319, "Derivatives Volume 24h (USD)" },
-            { 320, "Derivatives 24h Percentage Change (%)" },
-        };
-
         /// <summary>
         /// The script entry point.
         /// </summary>
@@ -79,6 +55,7 @@ namespace CoinMarketCap_1
 
                 IDms dms = engine.GetDms();
 
+                // Flexible protocol name matching (IndexOf) so minor naming variations don't break the script
                 var elements = dms.GetElements()
                     .Where(e => e.Protocol.Name.IndexOf("CoinMarketCap", StringComparison.OrdinalIgnoreCase) >= 0)
                     .ToList();
@@ -94,12 +71,14 @@ namespace CoinMarketCap_1
                 if (!Directory.Exists(exportPath))
                     Directory.CreateDirectory(exportPath);
 
+                // Export all standalone Latest Quotes parameters into one combined CSV (one row per element)
                 ExportLatestQuotesToCsv(engine, elements, exportPath);
 
+                // Export per-element table data using the generic helper
                 foreach (var element in elements)
                 {
-                    ExportLatestListingsToCsv(engine, element, exportPath);
-                    ExportCategoriesToCsv(engine, element, exportPath);
+                    ExportTableToCsv(engine, element, exportPath, LatestListingsTableId, "LatestListings", MapLatestListingsRow);
+                    ExportTableToCsv(engine, element, exportPath, CategoriesTableId, "Categories", MapCategoriesRow);
                 }
             }
             catch (Exception ex)
@@ -110,8 +89,7 @@ namespace CoinMarketCap_1
 
         /// <summary>
         /// Exports standalone Latest Quotes parameters for all elements into one CSV.
-        /// Columns are dynamic (built from LatestQuotesPids dictionary), so we assemble
-        /// the CSV lines manually and write them via WriterFactory as raw strings.
+        /// Each PID read has its own try/catch so a single missing parameter never aborts the row.
         /// </summary>
         private void ExportLatestQuotesToCsv(IEngine engine, IList<IDmsElement> elements, string exportPath)
         {
@@ -123,15 +101,15 @@ namespace CoinMarketCap_1
 
                 foreach (var element in elements)
                 {
-                    string Get(int pid)
+                    string SafeGet(int pid)
                     {
                         try
-						{
-							return element.GetStandaloneParameter<string>(pid).GetValue() ?? string.Empty;
-						}
+                        {
+                            return element.GetStandaloneParameter<string>(pid).GetValue() ?? string.Empty;
+                        }
                         catch (Exception ex)
                         {
-                            engine.Log($"Script|ExportLatestQuotesToCsv|Could not read pid {pid} from {element.Name}: {ex.Message}");
+                            engine.Log($"Script|ExportLatestQuotesToCsv|Could not read PID {pid} from '{element.Name}': {ex.Message}");
                             return string.Empty;
                         }
                     }
@@ -139,27 +117,27 @@ namespace CoinMarketCap_1
                     dtoList.Add(new LatestQuotesRow
                     {
                         ElementName = ScriptHelpers.EscapeCsvValue(element.Name),
-                        TotalMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(300)),
-                        TotalVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(301)),
-                        BtcDominance = ScriptHelpers.EscapeCsvValue(Get(302)),
-                        EthDominance = ScriptHelpers.EscapeCsvValue(Get(303)),
-                        ActiveCryptocurrencies = ScriptHelpers.EscapeCsvValue(Get(304)),
-                        LastUpdated = ScriptHelpers.EscapeCsvValue(Get(305)),
-                        DeFi24hPercentageChange = ScriptHelpers.EscapeCsvValue(Get(306)),
-                        ActiveExchanges = ScriptHelpers.EscapeCsvValue(Get(307)),
-                        TotalMarketCapYesterdayUsd = ScriptHelpers.EscapeCsvValue(Get(308)),
-                        TotalMarketCapYesterdayPercentageChange = ScriptHelpers.EscapeCsvValue(Get(309)),
-                        TotalVolume24hYesterdayUsd = ScriptHelpers.EscapeCsvValue(Get(310)),
-                        TotalVolume24hYesterdayPercentageChange = ScriptHelpers.EscapeCsvValue(Get(311)),
-                        AltcoinMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(312)),
-                        AltcoinVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(313)),
-                        DeFiMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(314)),
-                        DeFiVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(315)),
-                        StablecoinMarketCapUsd = ScriptHelpers.EscapeCsvValue(Get(316)),
-                        StablecoinVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(317)),
-                        Stablecoin24hPercentageChange = ScriptHelpers.EscapeCsvValue(Get(318)),
-                        DerivativesVolume24hUsd = ScriptHelpers.EscapeCsvValue(Get(319)),
-                        Derivatives24hPercentageChange = ScriptHelpers.EscapeCsvValue(Get(320)),
+                        TotalMarketCapUsd = ScriptHelpers.EscapeCsvValue(SafeGet(300)),
+                        TotalVolume24hUsd = ScriptHelpers.EscapeCsvValue(SafeGet(301)),
+                        BtcDominance = ScriptHelpers.EscapeCsvValue(SafeGet(302)),
+                        EthDominance = ScriptHelpers.EscapeCsvValue(SafeGet(303)),
+                        ActiveCryptocurrencies = ScriptHelpers.EscapeCsvValue(SafeGet(304)),
+                        LastUpdated = ScriptHelpers.EscapeCsvValue(SafeGet(305)),
+                        DeFi24hPercentageChange = ScriptHelpers.EscapeCsvValue(SafeGet(306)),
+                        ActiveExchanges = ScriptHelpers.EscapeCsvValue(SafeGet(307)),
+                        TotalMarketCapYesterdayUsd = ScriptHelpers.EscapeCsvValue(SafeGet(308)),
+                        TotalMarketCapYesterdayPercentageChange = ScriptHelpers.EscapeCsvValue(SafeGet(309)),
+                        TotalVolume24hYesterdayUsd = ScriptHelpers.EscapeCsvValue(SafeGet(310)),
+                        TotalVolume24hYesterdayPercentageChange = ScriptHelpers.EscapeCsvValue(SafeGet(311)),
+                        AltcoinMarketCapUsd = ScriptHelpers.EscapeCsvValue(SafeGet(312)),
+                        AltcoinVolume24hUsd = ScriptHelpers.EscapeCsvValue(SafeGet(313)),
+                        DeFiMarketCapUsd = ScriptHelpers.EscapeCsvValue(SafeGet(314)),
+                        DeFiVolume24hUsd = ScriptHelpers.EscapeCsvValue(SafeGet(315)),
+                        StablecoinMarketCapUsd = ScriptHelpers.EscapeCsvValue(SafeGet(316)),
+                        StablecoinVolume24hUsd = ScriptHelpers.EscapeCsvValue(SafeGet(317)),
+                        Stablecoin24hPercentageChange = ScriptHelpers.EscapeCsvValue(SafeGet(318)),
+                        DerivativesVolume24hUsd = ScriptHelpers.EscapeCsvValue(SafeGet(319)),
+                        Derivatives24hPercentageChange = ScriptHelpers.EscapeCsvValue(SafeGet(320)),
                     });
                 }
 
@@ -175,103 +153,95 @@ namespace CoinMarketCap_1
             }
         }
 
-        private void ExportLatestListingsToCsv(IEngine engine, IDmsElement element, string exportPath)
+        /// <summary>
+        /// Generic table export helper (from Doc 2).
+        /// Iterates table rows, calls <paramref name="rowMapper"/> for each primary key,
+        /// and writes the result list to a CSV named "{elementName}_{tableName}.csv".
+        /// </summary>
+        private void ExportTableToCsv<T>(
+            IEngine engine,
+            IDmsElement element,
+            string exportPath,
+            int tableId,
+            string tableName,
+            Func<IDmsTable, string, T> rowMapper)
+            where T : class, new()
         {
             try
             {
-                engine.GenerateInformation($"Script|ExportLatestListingsToCsv|Exporting element: {element.Name}");
+                engine.GenerateInformation($"Script|ExportTableToCsv|Exporting '{tableName}' for element: {element.Name}");
 
-                var table = element.GetTable(LatestListingsTableId);
-                var tableRows = table.GetRows();
+                var table = element.GetTable(tableId);
+                var rows = table.GetRows();
 
-                if (tableRows == null || tableRows.Length == 0)
+                // Guard: check null before using Length to avoid NullReferenceException
+                if (rows == null || rows.Length == 0)
                 {
-                    engine.Log($"Script|ExportLatestListingsToCsv|No rows found for element: {element.Name}");
+                    engine.Log($"Script|ExportTableToCsv|No rows found in '{tableName}' for element: {element.Name}");
                     return;
                 }
 
-                var dtoList = new List<LatestListingsRow>();
-                foreach (var row in tableRows)
+                var exportRows = new List<T>(rows.Length);
+
+                for (int i = 0; i < rows.Length; i++)
                 {
-                    dtoList.Add(new LatestListingsRow
-                    {
-                        Id = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[0])),
-                        Name = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[1])),
-                        Symbol = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[2])),
-                        Slug = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[3])),
-                        CmcRank = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[4])),
-                        PriceUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[5])),
-                        PercentChange24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[6])),
-                        MarketCapUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[7])),
-                        Volume24hUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[8])),
-                        CirculatingSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[9])),
-                        MaxSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[10])),
-                        LastUpdated = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[11])),
-                        PercentChange1h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[12])),
-                        PercentChange7d = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[13])),
-                        PercentChange30d = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[14])),
-                        VolumeChange24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[15])),
-                        FullyDilutedMarketCap = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[16])),
-                        TotalSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[17])),
-                        InfiniteSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[18])),
-                    });
+                    string primaryKey = Convert.ToString(rows[i][0]);
+                    exportRows.Add(rowMapper(table, primaryKey));
                 }
 
-                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_LatestListings.csv");
-                var writer = WriterFactory.GetWriter<LatestListingsRow>(filePath);
-                writer.Write(dtoList);
+                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_{tableName}.csv");
+                var writer = WriterFactory.GetWriter<T>(filePath);
+                writer.Write(exportRows);
 
-                engine.GenerateInformation($"Script|ExportLatestListingsToCsv|Exported {dtoList.Count} rows to: {filePath}");
+                engine.GenerateInformation($"Script|ExportTableToCsv|Exported {exportRows.Count} rows to: {filePath}");
             }
             catch (Exception ex)
             {
-                engine.Log($"Script|ExportLatestListingsToCsv|Exception thrown:{Environment.NewLine}{ex}");
+                engine.Log($"Script|ExportTableToCsv|Exception thrown:{Environment.NewLine}{ex}");
             }
         }
 
-        private void ExportCategoriesToCsv(IEngine engine, IDmsElement element, string exportPath)
+        private LatestListingsRow MapLatestListingsRow(IDmsTable table, string primaryKey)
         {
-            try
+            return new LatestListingsRow
             {
-                engine.GenerateInformation($"Script|ExportCategoriesToCsv|Exporting element: {element.Name}");
+                Id = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1001).GetValue(primaryKey, KeyType.PrimaryKey))),
+                Name = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1002).GetValue(primaryKey, KeyType.PrimaryKey))),
+                Symbol = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1003).GetValue(primaryKey, KeyType.PrimaryKey))),
+                Slug = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1004).GetValue(primaryKey, KeyType.PrimaryKey))),
+                CmcRank = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1005).GetValue(primaryKey, KeyType.PrimaryKey))),
+                PriceUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1006).GetValue(primaryKey, KeyType.PrimaryKey))),
+                PercentChange24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1007).GetValue(primaryKey, KeyType.PrimaryKey))),
+                MarketCapUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1008).GetValue(primaryKey, KeyType.PrimaryKey))),
+                Volume24hUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1009).GetValue(primaryKey, KeyType.PrimaryKey))),
+                CirculatingSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1010).GetValue(primaryKey, KeyType.PrimaryKey))),
+                MaxSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1011).GetValue(primaryKey, KeyType.PrimaryKey))),
+                LastUpdated = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1012).GetValue(primaryKey, KeyType.PrimaryKey))),
+                PercentChange1h = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1013).GetValue(primaryKey, KeyType.PrimaryKey))),
+                PercentChange7d = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1014).GetValue(primaryKey, KeyType.PrimaryKey))),
+                PercentChange30d = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1015).GetValue(primaryKey, KeyType.PrimaryKey))),
+                VolumeChange24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1016).GetValue(primaryKey, KeyType.PrimaryKey))),
+                FullyDilutedMarketCap = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1017).GetValue(primaryKey, KeyType.PrimaryKey))),
+                TotalSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1018).GetValue(primaryKey, KeyType.PrimaryKey))),
+                InfiniteSupply = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(1019).GetValue(primaryKey, KeyType.PrimaryKey))),
+            };
+        }
 
-                var table = element.GetTable(CategoriesTableId);
-                var tableRows = table.GetRows();
-
-                if (tableRows == null || tableRows.Length == 0)
-                {
-                    engine.Log($"Script|ExportCategoriesToCsv|No rows found for element: {element.Name}");
-                    return;
-                }
-
-                var dtoList = new List<CategoriesRow>();
-                foreach (var row in tableRows)
-                {
-                    dtoList.Add(new CategoriesRow
-                    {
-                        Id = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[0])),
-                        Name = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[1])),
-                        NumTokens = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[2])),
-                        AvgPriceChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[3])),
-                        VolumeChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[4])),
-                        MarketCapUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[5])),
-                        MarketCapChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[6])),
-                        Volume24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[7])),
-                        LastUpdated = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[8])),
-                        RefreshButton = ScriptHelpers.EscapeCsvValue(Convert.ToString(row[9])),
-                    });
-                }
-
-                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_Categories.csv");
-                var writer = WriterFactory.GetWriter<CategoriesRow>(filePath);
-                writer.Write(dtoList);
-
-                engine.GenerateInformation($"Script|ExportCategoriesToCsv|Exported {dtoList.Count} rows to: {filePath}");
-            }
-            catch (Exception ex)
+        private CategoriesRow MapCategoriesRow(IDmsTable table, string primaryKey)
+        {
+            return new CategoriesRow
             {
-                engine.Log($"Script|ExportCategoriesToCsv|Exception thrown:{Environment.NewLine}{ex}");
-            }
+                Id = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2001).GetValue(primaryKey, KeyType.PrimaryKey))),
+                Name = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2002).GetValue(primaryKey, KeyType.PrimaryKey))),
+                NumTokens = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2003).GetValue(primaryKey, KeyType.PrimaryKey))),
+                AvgPriceChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2004).GetValue(primaryKey, KeyType.PrimaryKey))),
+                VolumeChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2005).GetValue(primaryKey, KeyType.PrimaryKey))),
+                MarketCapUsd = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2006).GetValue(primaryKey, KeyType.PrimaryKey))),
+                MarketCapChange = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2007).GetValue(primaryKey, KeyType.PrimaryKey))),
+                Volume24h = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2008).GetValue(primaryKey, KeyType.PrimaryKey))),
+                LastUpdated = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2009).GetValue(primaryKey, KeyType.PrimaryKey))),
+                RefreshButton = ScriptHelpers.EscapeCsvValue(Convert.ToString(table.GetColumn<string>(2010).GetValue(primaryKey, KeyType.PrimaryKey))),
+            };
         }
     }
 }
