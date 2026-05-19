@@ -27,10 +27,12 @@ namespace CoinMarketCap_1
     /// </summary>
 	public class Script
     {
-        private const string ElementName = "coin-market";
+        private const string ProtocolName = "Exercise HTTP CoinMarketCap SCO";
         private const string BaseExportPath = @"C:\Skyline DataMiner\Documents";
         private const int LatestListingsTableId = 1000;
         private const int CategoriesTableId = 2000;
+        private static readonly int[] LatestListingsColumnPids = { 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012 };
+        private static readonly int[] CategoriesColumnPids = { 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 };
 
         /// <summary>
         /// The script entry point.
@@ -52,11 +54,11 @@ namespace CoinMarketCap_1
 
                 IDms dms = engine.GetDms();
 
-                var elements = dms.GetElements().Where(e => e.Name.Contains(ElementName)).ToList();
+                var elements = dms.GetElements().Where(e => e.Protocol.Name == "Exercise HTTP CoinMarketCap SCO").ToList();
 
                 if (!elements.Any())
                 {
-                    engine.ExitFail($"No elements found with this name '{ElementName}'.");
+                    engine.ExitFail($"No elements found with this protocol '{ProtocolName}'.");
                     return;
                 }
 
@@ -79,19 +81,28 @@ namespace CoinMarketCap_1
                 engine.GenerateInformation($"Script|ExportLatestListings|Exporting element: {element.Name}");
 
                 var table = element.GetTable(LatestListingsTableId);
-                var rows = table.GetRows();
 
-                if(rows == null || rows.Length == 0)
+                var rows = table.GetRows();
+                int rowCount = rows.Length;
+
+                if (rows == null || rowCount == 0)
                 {
-                    engine.Log($"Script|ExportLatestListings|No rows found in Latest Listings table for element: {element.Name}");
+                    engine.Log($"Script|ExportCategories|No rows found in Latest Listings table for element: {element.Name}");
                     return;
                 }
 
                 var csvRows = new List<string>();
 
-                csvRows.Add("ID,Name,Symbol,Rank,Circulating Supply,Max Supply,Price USD,Market Cap,Volume 24h,Percent Change 1h,Percent Change 24h,Percent Change 7d");
+                csvRows.Add("ID;Name;Symbol;Rank;Circulating Supply;Max Supply;Price USD;Market Cap;Volume 24h;Percent Change 1h;Percent Change 24h;Percent Change 7d");
 
-                csvRows.AddRange(rows.Select(row => string.Join(",", row.Select(cell => Convert.ToString(cell)))));
+                for (int i = 0; i < rowCount; i++)
+                {
+                    var cells = LatestListingsColumnPids.Select(pid =>
+                                                  table.GetColumn<string>(pid).GetValue(
+                                                    Convert.ToString(rows[i][0]),KeyType.PrimaryKey));
+
+                    csvRows.Add(string.Join(";", cells));
+                }
 
                 if (!Directory.Exists(exportPath))
                 {
@@ -118,8 +129,9 @@ namespace CoinMarketCap_1
 
                 var table = element.GetTable(CategoriesTableId);
                 var rows = table.GetRows();
+                var rowCount = rows.Length;
 
-                if (rows == null || rows.Length == 0)
+                if (rows == null || rowCount == 0)
                 {
                     engine.Log($"Script|ExportCategories|No rows found in Latest Listings table for element: {element.Name}");
                     return;
@@ -127,9 +139,16 @@ namespace CoinMarketCap_1
 
                 var csvRows = new List<string>();
 
-                csvRows.Add("ID,Name,Number of Tokens,Average Price Change,Market Cap,Market Cap Change,Volume,Volume Change,Last Updated");
+                csvRows.Add("ID;Name;Number of Tokens;Average Price Change;Market Cap;Market Cap Change;Volume;Volume Change;Last Updated");
 
-                csvRows.AddRange(rows.Select(row => string.Join(",", row.Select(cell => Convert.ToString(cell)))));
+                for (int i = 0; i < rowCount; i++)
+                {
+                    var cells = CategoriesColumnPids.Select(pid =>
+                                                 table.GetColumn<string>(pid).GetValue(
+                                                   Convert.ToString(rows[i][0]), KeyType.PrimaryKey));
+
+                    csvRows.Add(string.Join(";", cells));
+                }
 
                 if (!Directory.Exists(exportPath))
                 {
