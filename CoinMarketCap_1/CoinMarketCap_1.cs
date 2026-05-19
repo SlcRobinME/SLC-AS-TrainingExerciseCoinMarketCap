@@ -56,7 +56,7 @@ namespace CoinMarketCap_1
 
                 IDms dms = engine.GetDms();
 
-                var elements = dms.GetElements().Where(e => e.Protocol.Name == "Exercise HTTP CoinMarketCap SCO").ToList();
+                var elements = dms.GetElements().Where(e => e.Protocol.Name == ProtocolName).ToList();
 
                 if (!elements.Any())
                 {
