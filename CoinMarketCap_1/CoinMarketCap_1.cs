@@ -24,54 +24,6 @@ namespace CoinMarketCap_1
 	using Skyline.DataMiner.Utils.ExportImport.Writers;
 	using Skyline.DataMiner.Utils.SecureCoding.SecureIO;
 
-	public class LatestListingsRow
-    {
-        public string Id { get; set; }
-
-        public string Name { get; set; }
-
-        public string Symbol { get; set; }
-
-        public string Rank { get; set; }
-
-        public string CirculatingSupply { get; set; }
-
-        public string MaxSupply { get; set; }
-
-        public string PriceUsd { get; set; }
-
-        public string MarketCap { get; set; }
-
-        public string Volume24h { get; set; }
-
-        public string PercentChange1h { get; set; }
-
-        public string PercentChange24h { get; set; }
-
-        public string PercentChange7d { get; set; }
-    }
-
-	public class CategoriesRow
-    {
-        public string Id { get; set; }
-
-        public string Name { get; set; }
-
-        public string NumberOfTokens { get; set; }
-
-        public string AveragePriceChange { get; set; }
-
-        public string MarketCap { get; set; }
-
-        public string MarketCapChange { get; set; }
-
-        public string Volume { get; set; }
-
-        public string VolumeChange { get; set; }
-
-        public string LastUpdated { get; set; }
-    }
-
     /// <summary>
     /// Represents a DataMiner Automation script.
     /// </summary>
@@ -81,8 +33,6 @@ namespace CoinMarketCap_1
         private const string BaseExportPath = @"C:\Skyline DataMiner\Documents";
         private const int LatestListingsTableId = 1000;
         private const int CategoriesTableId = 2000;
-        private const string LatestListingsHeader = "ID;Name;Symbol;Rank;Circulating Supply;Max Supply;Price USD;Market Cap;Volume 24h;Percent Change 1h;Percent Change 24h;Percent Change 7d";
-        private const string CategoriesHeader = "ID;Name;Number of Tokens;Average Price Change;Market Cap;Market Cap Change;Volume;Volume Change;Last Updated";
         private static readonly int[] LatestListingsColumnPids = { 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012 };
         private static readonly int[] CategoriesColumnPids = { 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 };
 
