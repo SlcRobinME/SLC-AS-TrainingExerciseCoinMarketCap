@@ -7,10 +7,10 @@ Revision History:
 
 DATE        VERSION     AUTHOR          COMMENTS
 
-15/05/2024  1.0.0.1     AMO, Skyline    Initial version
-18/05/2024  1.0.0.2     AMO, Skyline    Fixed: export all columns + Categories table
-18/05/2024  1.0.0.3     AMO, Skyline    feat: added more Latest Quotes parameters + used Skyline.DataMiner.Utils.ExportImport
-xx/xx/2024  1.0.0.4     AMO, Skyline    refactor: generic ExportTableToCsv<T> + LatestQuotesPids-driven export
+15/05/2026  1.0.0.1     AMO, Skyline    Initial version
+18/05/2026  1.0.0.2     AMO, Skyline    Fixed: export all columns + Categories table
+18/05/2026  1.0.0.3     AMO, Skyline    feat: added more Latest Quotes parameters + used Skyline.DataMiner.Utils.ExportImport
+19/05/2026  1.0.0.4     AMO, Skyline    refactor: generic ExportTableToCsv<T> + LatestQuotesPids-driven export
 ****************************************************************************
 */
 
