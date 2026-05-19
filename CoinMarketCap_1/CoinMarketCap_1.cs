@@ -31,8 +31,11 @@ namespace CoinMarketCap_1
         private const string BaseExportPath = @"C:\Skyline DataMiner\Documents";
         private const int LatestListingsTableId = 1000;
         private const int CategoriesTableId = 2000;
+        private const string LatestListingsHeader = "ID;Name;Symbol;Rank;Circulating Supply;Max Supply;Price USD;Market Cap;Volume 24h;Percent Change 1h;Percent Change 24h;Percent Change 7d";
+        private const string CategoriesHeader = "ID;Name;Number of Tokens;Average Price Change;Market Cap;Market Cap Change;Volume;Volume Change;Last Updated";
         private static readonly int[] LatestListingsColumnPids = { 1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009, 1010, 1011, 1012 };
         private static readonly int[] CategoriesColumnPids = { 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009 };
+
 
         /// <summary>
         /// The script entry point.
@@ -64,8 +67,8 @@ namespace CoinMarketCap_1
 
                 foreach (var element in elements)
                 {
-                    ExportLatestListingsToCsv(engine, element,exportPath);
-                    ExportCategoriesToCsv(engine, element, exportPath);
+                    ExportTableToCsv(engine, element,exportPath,LatestListingsTableId,LatestListingsColumnPids,LatestListingsHeader,"LatestListings");
+                    ExportTableToCsv(engine, element, exportPath, CategoriesTableId, CategoriesColumnPids, CategoriesHeader, "Categories");
                 }
             }
             catch(Exception ex)
@@ -74,13 +77,12 @@ namespace CoinMarketCap_1
             }
 		}
 
-        private void ExportLatestListingsToCsv(IEngine engine, IDmsElement element, string exportPath)
+        private void ExportTableToCsv(IEngine engine, IDmsElement element, string exportPath, int tableId, int[] columnPids, string header, string tableName)
         {
             try
             {
-                engine.GenerateInformation($"Script|ExportLatestListings|Exporting element: {element.Name}");
-
-                var table = element.GetTable(LatestListingsTableId);
+                engine.GenerateInformation($"Script|ExportLatestListings|Exporting {tableName}");
+                var table = element.GetTable(tableId);
 
                 var rows = table.GetRows();
                 int rowCount = rows.Length;
@@ -92,14 +94,13 @@ namespace CoinMarketCap_1
                 }
 
                 var csvRows = new List<string>();
-
-                csvRows.Add("ID;Name;Symbol;Rank;Circulating Supply;Max Supply;Price USD;Market Cap;Volume 24h;Percent Change 1h;Percent Change 24h;Percent Change 7d");
+                csvRows.Add(header);
 
                 for (int i = 0; i < rowCount; i++)
                 {
-                    var cells = LatestListingsColumnPids.Select(pid =>
+                    var cells = columnPids.Select(pid =>
                                                   table.GetColumn<string>(pid).GetValue(
-                                                    Convert.ToString(rows[i][0]),KeyType.PrimaryKey));
+                                                    Convert.ToString(rows[i][0]), KeyType.PrimaryKey));
 
                     csvRows.Add(string.Join(";", cells));
                 }
@@ -109,61 +110,14 @@ namespace CoinMarketCap_1
                     Directory.CreateDirectory(exportPath);
                 }
 
-                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_LatestListings.csv");
-
+                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_{tableName}.csv");
                 File.WriteAllLines(filePath, csvRows);
 
-                engine.GenerateInformation($"Script|ExportLatestListings|Successfully exported {rows.Count()} rows to: {filePath}");
+                engine.GenerateInformation($"Script|ExportTableToCsv|Successfully exported {rows.Count()} rows to: {filePath}");
             }
             catch (Exception ex)
             {
-                engine.Log($"Script|ExportLatestListings|Exception thrown:{Environment.NewLine}{ex}");
-            }
-        }
-
-        private void ExportCategoriesToCsv(IEngine engine, IDmsElement element, string exportPath)
-        {
-            try
-            {
-                engine.GenerateInformation($"Script|ExportCategories|Exporting element: {element.Name}");
-
-                var table = element.GetTable(CategoriesTableId);
-                var rows = table.GetRows();
-                var rowCount = rows.Length;
-
-                if (rows == null || rowCount == 0)
-                {
-                    engine.Log($"Script|ExportCategories|No rows found in Latest Listings table for element: {element.Name}");
-                    return;
-                }
-
-                var csvRows = new List<string>();
-
-                csvRows.Add("ID;Name;Number of Tokens;Average Price Change;Market Cap;Market Cap Change;Volume;Volume Change;Last Updated");
-
-                for (int i = 0; i < rowCount; i++)
-                {
-                    var cells = CategoriesColumnPids.Select(pid =>
-                                                 table.GetColumn<string>(pid).GetValue(
-                                                   Convert.ToString(rows[i][0]), KeyType.PrimaryKey));
-
-                    csvRows.Add(string.Join(";", cells));
-                }
-
-                if (!Directory.Exists(exportPath))
-                {
-                    Directory.CreateDirectory(exportPath);
-                }
-
-                string filePath = SecurePath.ConstructSecurePath(exportPath, $"{element.Name}_Categories.csv");
-
-                File.WriteAllLines(filePath, csvRows);
-
-                engine.GenerateInformation($"Script|ExportCategories|Successfully exported {rows.Count()} rows to: {filePath}");
-            }
-            catch (Exception ex)
-            {
-                engine.Log($"Script|ExportCategories|Exception thrown:{Environment.NewLine}{ex}");
+                engine.Log($"Script|ExportTableToCsv|Exception thrown:{ex.Message}");
             }
         }
     }
