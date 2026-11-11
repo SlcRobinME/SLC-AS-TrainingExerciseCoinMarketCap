@@ -8,12 +8,18 @@
 	<Folder></Folder>
 
 	<Protocols>
+		<Protocol id="3">
+			<Description>coinmarketcap</Description>
+			<Name>Exercise HTTP CoinMarketCap DFA</Name>
+			<Version>Production</Version>
+			<DefaultElement></DefaultElement>
+		</Protocol>
 	</Protocols>
 
-	<Memory>
-	</Memory>
-
 	<Parameters>
+		<ScriptParameter id="2" type="string" values="">
+			<Description>StorageFolder</Description>
+		</ScriptParameter>
 	</Parameters>
 
 	<Script>
